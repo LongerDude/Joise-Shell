@@ -28,7 +28,7 @@ public class Main {
                     continue;
                 } else {
                     StringBuilder builder = new StringBuilder(parts.get(1));
-                    builder.append(": command not found ");
+                    builder.append(": not found ");
                     System.out.println(builder.toString());
                     continue;
                 }
