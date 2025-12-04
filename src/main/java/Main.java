@@ -54,7 +54,7 @@ public class Main {
         String PATH = System.getenv("PATH");
         if (PATH != null) {
             String[] directories = PATH.split(File.pathSeparator);
-            Optional<Path> opt = null;
+            Optional<Path> opt;
             for (String directoryPath : directories) {
                 Path path = Paths.get(directoryPath);
                 if (Files.isDirectory(path)) {
