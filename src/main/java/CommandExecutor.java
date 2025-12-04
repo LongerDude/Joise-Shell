@@ -43,7 +43,7 @@ public class CommandExecutor {
         // 6. If external program is found, execute it (this is advanced, for now just print "found at...")
         if (executablePath.isPresent()){
             List<String> commandAndArgs = new ArrayList<>();
-            commandAndArgs.add(executablePath.get().toAbsolutePath().toString());
+            commandAndArgs.add(executablePath.get().getFileName().toString());
             if (commandSplit.size() > 1) {
                 commandAndArgs.addAll(commandSplit.subList(1, commandSplit.size()));
             }
