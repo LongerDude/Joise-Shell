@@ -31,7 +31,7 @@ public class CdCommand implements Command {
             return;
         }
         if (args.get(1).equals("~")){
-            executor.setCwd(Paths.get(System.getProperty("user.dir")));
+            executor.setCwd(Paths.get(System.getenv("HOME")));
             return;
         }
         String targetPathString = args.get(1);
