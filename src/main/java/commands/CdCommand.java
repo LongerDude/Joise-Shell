@@ -5,6 +5,7 @@ import service.CommandExecutor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class CdCommand implements Command {
@@ -27,6 +28,10 @@ public class CdCommand implements Command {
     public void execute(List<String> args, CommandExecutor executor) {
         if (args.size() < 2) {
             System.err.println("cd: missing argument");
+            return;
+        }
+        if (args.get(1).equals("~")){
+            executor.setCwd(Paths.get(System.getProperty("user.dir")));
             return;
         }
         String targetPathString = args.get(1);
