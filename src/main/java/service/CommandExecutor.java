@@ -1,4 +1,6 @@
-package commands;
+package service;
+
+import commands.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
