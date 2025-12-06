@@ -38,39 +38,60 @@ public class CommandExecutor {
     }
 
     public static List<String> parse(String line) {
-        List<String> commandLine = new ArrayList<>();
-        boolean quotedMode = false;
-        StringBuilder builder = new StringBuilder("");
+        List<String> commandAndArguments = new ArrayList<>();
+        StringBuilder currentWord = new StringBuilder();
+
+        // --- FSM State Flags ---
+        boolean inQuotes = false;  // Tracks if we are inside single quotes '...'
+        boolean isEscaping = false; // Tracks if the previous char was '\'
+
         for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) == ' ' && commandLine.size() == 0) {
-                commandLine.add(builder.toString());
-                builder = new StringBuilder("");
-                continue;
-            }
-            if (line.charAt(i) == '\\') {
+            char c = line.charAt(i);
 
-                continue;
-            }
-            if (line.charAt(i) == '\'' && line.charAt(i - 1) == '\\') {
-                builder.append(line.charAt(i));
-                continue;
-            }
-            if (line.charAt(i) == '\'') {
-                quotedMode = !quotedMode;
-                continue;
-            }
-            if (quotedMode) {
-                builder.append(line.charAt(i));
-                continue;
-            }
-            if (line.charAt(i) == ' ' && line.charAt(i - 1) == ' ') {
-                continue;
-            }
-            builder.append(line.charAt(i));
 
+            if (isEscaping) {
+                currentWord.append(c);
+                isEscaping = false; // Reset the state
+                continue;
+            }
+
+
+            if (c == '\\') {
+                isEscaping = true;
+                // The backslash itself is stripped (not appended)
+                continue;
+            }
+
+
+            if (c == '\'') {
+                inQuotes = !inQuotes; // Toggle the state
+                // The quote is stripped (not appended)
+                continue;
+            }
+
+
+            if (c == ' ' && !inQuotes) {
+                // A space, when not quoted, acts as a word boundary.
+                if (currentWord.length() > 0) {
+                    commandAndArguments.add(currentWord.toString());
+                    currentWord.setLength(0); // Reset for the next word
+                }
+                // Consecutive unquoted spaces are naturally ignored here.
+                continue;
+            }
+
+
+            currentWord.append(c);
         }
-        commandLine.add(builder.toString());
-        return commandLine;
+
+        // --- Finalization ---
+        // If the input ended with a partial word, add it now.
+        if (currentWord.length() > 0) {
+            commandAndArguments.add(currentWord.toString());
+        }
+
+
+        return commandAndArguments;
     }
 
     public boolean executeCommand(String commandLine) {
