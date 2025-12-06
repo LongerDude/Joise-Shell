@@ -42,68 +42,42 @@ public class CommandExecutor {
         StringBuilder currentWord = new StringBuilder();
 
         // --- FSM State Flags ---
-        boolean inQuotes = false;  // Tracks if we are inside single quotes '...'
-        boolean isEscaping = false; // Tracks if the previous char was '\'
+        boolean inQuotes = false;
+        boolean isEscaping = false;
 
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
-
-
             if (isEscaping) {
                 currentWord.append(c);
-                isEscaping = false; // Reset the state
+                isEscaping = false;
                 continue;
             }
-
-
             if (c == '\\') {
                 isEscaping = true;
-                // The backslash itself is stripped (not appended)
                 continue;
             }
-
-
-            if (c == '\'') {
-                inQuotes = !inQuotes; // Toggle the state
-                // The quote is stripped (not appended)
+            if (c == '\'' || c == '\"') {
+                inQuotes = !inQuotes;
                 continue;
             }
-
-
             if (c == ' ' && !inQuotes) {
-                // A space, when not quoted, acts as a word boundary.
                 if (currentWord.length() > 0) {
                     commandAndArguments.add(currentWord.toString());
-                    currentWord.setLength(0); // Reset for the next word
+                    currentWord.setLength(0);
                 }
-                // Consecutive unquoted spaces are naturally ignored here.
                 continue;
             }
-
-
             currentWord.append(c);
         }
-
-        // --- Finalization ---
-        // If the input ended with a partial word, add it now.
         if (currentWord.length() > 0) {
             commandAndArguments.add(currentWord.toString());
         }
-
-
         return commandAndArguments;
     }
 
     public boolean executeCommand(String commandLine) {
         List<String> commandAndArguments = parse(commandLine);
-
-
-        // 1. Split the commandLine into parts
-        //List<String> commandSplit = List.of(commandLine.split(" "));
-        // 2. Extract the command name
         String commandName = commandAndArguments.get(0);
-        // 3. Check builtInCommands map
-        // 4. If found, call command.execute(args) and return true
         if (builtInCommands.containsKey(commandName)) {
             if (commandName.equals("type") && this.builtInCommands.containsKey(commandAndArguments.get(1))) { //for builtin commands
                 System.out.println(commandAndArguments.get(1) + " is a shell builtin");
@@ -113,9 +87,9 @@ public class CommandExecutor {
             builtInCommands.get(commandName).execute(commandAndArguments, this);
             return true;
         }
-        // 5. If not found, use pathResolver to find the external program
+
         Optional<Path> executablePath = pathResolver.findExecutable(commandName);
-        // 6. If external program is found, execute it
+
         if (executablePath.isPresent()) {
             List<String> commandAndArgs = new ArrayList<>();
             commandAndArgs.add(executablePath.get().getFileName().toString());
@@ -144,7 +118,5 @@ public class CommandExecutor {
             System.out.println(commandName + ": command not found");
         }
         return true;
-        // 7. If neither, print "command not found" and return true (to continue loop)
-        // 8. Special handling for 'exit'
     }
 }
