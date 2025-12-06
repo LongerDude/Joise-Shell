@@ -43,6 +43,7 @@ public class CommandExecutor {
 
         // --- FSM State Flags ---
         boolean inQuotes = false;
+        boolean inDoubleQuotes = false;
         boolean isEscaping = false;
 
         for (int i = 0; i < line.length(); i++) {
@@ -56,11 +57,15 @@ public class CommandExecutor {
                 isEscaping = true;
                 continue;
             }
-            if (c == '\'' || c == '\"') {
+            if (c == '\"') {
+                inDoubleQuotes = !inDoubleQuotes;
+                continue;
+            }
+            if (c == '\'') {
                 inQuotes = !inQuotes;
                 continue;
             }
-            if (c == ' ' && !inQuotes) {
+            if (c == ' ' && !inQuotes && !inDoubleQuotes) {
                 if (currentWord.length() > 0) {
                     commandAndArguments.add(currentWord.toString());
                     currentWord.setLength(0);
