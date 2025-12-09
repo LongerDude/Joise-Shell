@@ -6,10 +6,10 @@ public class CharStream {
 
     public CharStream(String input) {
         this.input = input;
-        this.position = 0;
+        this.position = -1;
     }
     public boolean hasNext(){
-        return position < input.length();
+        return position < input.length() -1;
     }
     public char peek() {
         if (hasNext()) {
@@ -20,8 +20,8 @@ public class CharStream {
     }
     public char next() {
         if (hasNext()) {
-            char nextChar = input.charAt(position); // 1. Read character at current position (e.g., index 0)
-            position++;                             // 2. Advance to the next position (e.g., index 1)
+            position++;
+            char nextChar = input.charAt(position);
             return nextChar;
         }
         return '0';

@@ -82,7 +82,7 @@ public class CommandExecutor {
                     }
                     if (c == '\\'){
                         char nextChar = stream.peek();
-                        if (nextChar == '"' || nextChar == '$' || nextChar == '`' || nextChar == '\\' ){
+                        if (nextChar == '"' || nextChar == '$' || nextChar == '\\' ){
                             currentState = State.ESCAPED;
                             previousState = State.IN_DOUBLE_QUOTES;
                             break;
@@ -107,10 +107,10 @@ public class CommandExecutor {
 
 
         }
-        commandAndArguments.add(currentWord.toString());
+        if (currentWord.length() > 0) {
+            commandAndArguments.add(currentWord.toString());
+        }
         return commandAndArguments;
-
-
 
     }
     public boolean executeCommand(String commandLine) {
