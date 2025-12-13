@@ -4,6 +4,8 @@ import commands.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -65,7 +67,6 @@ public class CommandExecutor {
                         previousState = State.DEFAULT;
                         break;
                     }
-
                     if (c == ' ') {
                         if (!currentWord.isEmpty()) {
                             commandAndArguments.add(currentWord.toString());
@@ -90,7 +91,6 @@ public class CommandExecutor {
 
                     }
                     currentWord.append(c);
-
                     break;
                 case IN_SINGLE_QUOTES:
                     if (c == '\'') {
@@ -116,6 +116,8 @@ public class CommandExecutor {
     public boolean executeCommand(String commandLine) {
         List<String> commandAndArguments = parse(commandLine);
         String commandName = commandAndArguments.get(0);
+        Path directory = Paths.get("");
+        boolean writingToDirectory = false;
         if (builtInCommands.containsKey(commandName)) {
             if (commandName.equals("type") && this.builtInCommands.containsKey(commandAndArguments.get(1))) { //for builtin commands
                 System.out.println(commandAndArguments.get(1) + " is a shell builtin");
@@ -132,7 +134,17 @@ public class CommandExecutor {
             List<String> commandAndArgs = new ArrayList<>();
             commandAndArgs.add(executablePath.get().getFileName().toString());
             if (commandAndArguments.size() > 1) {
-                commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.size()));
+
+                if (commandAndArguments.contains(">") ){
+                    commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.indexOf(">")));
+                    writingToDirectory = true;
+                    directory = Paths.get(commandAndArguments.get(commandAndArguments.indexOf(">") + 1));
+                } else if (commandAndArguments.contains("1>")){
+                    commandAndArguments.subList(1, commandAndArguments.indexOf(">") - 1);
+                } else {
+                    commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.size()));
+                }
+
             }
             ProcessBuilder builder = new ProcessBuilder(commandAndArgs);
             builder.directory(cwd.toFile());
@@ -141,6 +153,10 @@ public class CommandExecutor {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (writingToDirectory){
+                        Files.write(directory,line.getBytes(StandardCharsets.UTF_8));
+                        continue;
+                    }
                     System.out.println(line);
                 }
                 BufferedReader errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
