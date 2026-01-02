@@ -13,7 +13,7 @@ public class EchoCommand implements Command {
         name = "echo";
     }
     @Override
-    public void execute(List<String> args, CommandExecutor executor){
+    public void execute(CommandExecutor executor, List<String> args){
         StringBuilder string = new StringBuilder("");
         StringBuilder directory = new StringBuilder("");
         boolean writingToDirectory = false;

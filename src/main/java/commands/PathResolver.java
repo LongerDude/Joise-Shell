@@ -17,20 +17,22 @@ public class PathResolver {
 
     public Optional<Path> findExecutable(String command) {
         Optional<Path> opt = Optional.empty();
-        if (this.PATH != null) {
-            String[] directories = PATH.split(File.pathSeparator);
-            for (String directoryPath : directories) {
-                Path path = Paths.get(directoryPath);
-                if (Files.isDirectory(path)) {
-                    try (Stream<Path> paths = Files.walk(path, 1)) {
-                        Optional<Path> testCase = paths.filter(Files::isExecutable).filter(file -> file.getFileName().toString().equals(command)).findAny();
-                        if (testCase.isPresent()){
-                            return testCase;
-                        }
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
+        if (this.PATH == null) {
+            return opt;
+        }
+        String[] directories = PATH.split(File.pathSeparator);
+        for (String directoryPath : directories) {
+            Path path = Paths.get(directoryPath);
+            if (!Files.isDirectory(path)) {
+                continue;
+            }
+            try (Stream<Path> paths = Files.walk(path, 1)) {
+                Optional<Path> testCase = paths.filter(Files::isExecutable).filter(file -> file.getFileName().toString().equals(command)).findAny();
+                if (testCase.isPresent()){
+                    return testCase;
                 }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
             }
         }
         return opt;

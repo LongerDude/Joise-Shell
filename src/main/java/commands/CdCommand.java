@@ -25,7 +25,7 @@ public class CdCommand implements Command {
     }
 
     @Override
-    public void execute(List<String> args, CommandExecutor executor) {
+    public void execute(CommandExecutor executor, List<String> args) {
         if (args.size() < 2) {
             System.err.println("cd: missing argument");
             return;

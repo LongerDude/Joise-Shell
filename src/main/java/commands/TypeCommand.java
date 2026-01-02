@@ -15,7 +15,7 @@ public class TypeCommand implements Command {
         this.resolver = new PathResolver();
     }
     @Override
-    public void execute(List<String> args, CommandExecutor executor){
+    public void execute(CommandExecutor executor, List<String> args){
 
         Optional<Path> path = resolver.findExecutable(args.get(1));
         if (path.isPresent()){

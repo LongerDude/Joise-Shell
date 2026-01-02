@@ -3,8 +3,8 @@ package service;
 import commands.*;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,8 +39,6 @@ public class CommandExecutor {
         builtInCommands.put(command.getName(), command);
     }
 
-
-
     public static List<String> parse(String line) {
         List<String> commandAndArguments = new ArrayList<>();
         State currentState = State.DEFAULT;
@@ -48,21 +46,21 @@ public class CommandExecutor {
         CharStream stream = new CharStream(line);
         StringBuilder currentWord = new StringBuilder();
 
-        while(stream.hasNext()){
+        while (stream.hasNext()) {
             char c = stream.next();
             switch (currentState) {
-                case DEFAULT :
-                    if (c == '"'){
+                case DEFAULT:
+                    if (c == '"') {
                         currentState = State.IN_DOUBLE_QUOTES;
                         previousState = State.DEFAULT;
                         break;
                     }
-                    if (c == '\''){
+                    if (c == '\'') {
                         currentState = State.IN_SINGLE_QUOTES;
                         previousState = State.DEFAULT;
                         break;
                     }
-                    if (c == '\\'){
+                    if (c == '\\') {
                         currentState = State.ESCAPED;
                         previousState = State.DEFAULT;
                         break;
@@ -77,13 +75,13 @@ public class CommandExecutor {
                     currentWord.append(c);
                     break;
                 case IN_DOUBLE_QUOTES:
-                    if (c == '\"'){
+                    if (c == '\"') {
                         currentState = State.DEFAULT;
                         break;
                     }
-                    if (c == '\\'){
+                    if (c == '\\') {
                         char nextChar = stream.peek();
-                        if (nextChar == '"' || nextChar == '$' || nextChar == '`' || nextChar == '\\' ){
+                        if (nextChar == '"' || nextChar == '$' || nextChar == '`' || nextChar == '\\') {
                             currentState = State.ESCAPED;
                             previousState = State.IN_DOUBLE_QUOTES;
                             break;
@@ -108,69 +106,96 @@ public class CommandExecutor {
 
         }
         commandAndArguments.add(currentWord.toString());
+
         return commandAndArguments;
 
 
-
     }
+
     public boolean executeCommand(String commandLine) {
         List<String> commandAndArguments = parse(commandLine);
-        String commandName = commandAndArguments.get(0);
-        Path directory = Paths.get("");
-        boolean writingToDirectory = false;
-        if (builtInCommands.containsKey(commandName)) {
-            if (commandName.equals("type") && this.builtInCommands.containsKey(commandAndArguments.get(1))) { //for builtin commands
-                System.out.println(commandAndArguments.get(1) + " is a shell builtin");
-                return true;
-            }
+        String commandName = commandAndArguments.getFirst();
+        if (isBuiltInCommand(commandName, commandAndArguments)) return true;
+        Optional<Path> executablePath = pathResolver.findExecutable(commandName);
 
-            builtInCommands.get(commandName).execute(commandAndArguments, this);
+        if (executablePath.isEmpty()) {
+            System.out.println(commandName + ": command not found");
             return true;
         }
 
-        Optional<Path> executablePath = pathResolver.findExecutable(commandName);
-
-        if (executablePath.isPresent()) {
-            List<String> commandAndArgs = new ArrayList<>();
-            commandAndArgs.add(executablePath.get().getFileName().toString());
-            if (commandAndArguments.size() > 1) {
-
-                if (commandAndArguments.contains(">") ){
-                    commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.indexOf(">")));
-                    writingToDirectory = true;
-                    directory = Paths.get(commandAndArguments.get(commandAndArguments.indexOf(">") + 1));
-                } else if (commandAndArguments.contains("1>")){
-                    commandAndArguments.subList(1, commandAndArguments.indexOf(">") - 1);
-                } else {
-                    commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.size()));
-                }
-
-            }
-            ProcessBuilder builder = new ProcessBuilder(commandAndArgs);
-            builder.directory(cwd.toFile());
-            try {
-                Process process = builder.start();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (writingToDirectory){
-                        Files.write(directory,line.getBytes(StandardCharsets.UTF_8));
-                        continue;
-                    }
-                    System.out.println(line);
-                }
-                BufferedReader errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-                while ((line = errReader.readLine()) != null) {
-                    System.out.println(line);
-                }
-
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
-            }
-        } else {
-            System.out.println(commandName + ": command not found");
-        }
+        List<String> commandAndArgs = new ArrayList<>();
+        commandAndArgs.add(executablePath.get().getFileName().toString());
+        Path file = getPath(commandAndArguments, commandAndArgs);
+        processor(commandAndArgs, file);
         return true;
+    }
+
+    private static Path getPath(List<String> commandAndArguments, List<String> commandAndArgs) {
+        if (commandAndArguments.size() <= 1) {
+            return null;
+        }
+
+        if (commandAndArguments.contains(">")) {
+            commandAndArgs.addAll(commandAndArguments.subList(1, commandAndArguments.indexOf(">"))); // split string into elements
+            return Paths.get(commandAndArguments.get(commandAndArguments.indexOf(">") + 1)); // isolationg the file path
+        }
+
+
+        return null;
+    }
+
+    public boolean isBuiltInCommand(String command, List<String> args) {
+        if (!builtInCommands.containsKey(command)) {
+            return false;
+        }
+
+        if (command.equals("type") && this.builtInCommands.containsKey(args.get(1))) { //for builtin commands
+            System.out.println(args.get(1) + " is a shell builtin");
+            return true;
+        }
+
+        builtInCommands.get(command).execute(this, args);
+        return true;
+    }
+
+    public void processor(List<String> commandAndArgs, Path file) {
+        ProcessBuilder builder = new ProcessBuilder(commandAndArgs);
+        builder.directory(cwd.toFile());
+        Process process;
+        try {
+            process = builder.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        String line;
+
+
+        while (true) {
+            try {
+                if ((line = reader.readLine()) == null) break; // break case
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            if (file == null) { // implicit redirection for writing standard output
+                System.out.println(line);
+                continue;
+            }
+            try {
+                Files.writeString(file, line);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        while (true) {
+            try {
+                if ((line = errReader.readLine()) == null) break;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println(line);
+        }
     }
 }

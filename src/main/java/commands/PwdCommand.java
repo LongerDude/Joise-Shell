@@ -11,17 +11,13 @@ public class PwdCommand implements Command {
         this.name = "pwd";
     }
 
-
-
-    public void execute(List<String> args){
-        System.out.println(System.getProperty("user.dir"));
-    }
     @Override
-    public void execute(List<String> args, CommandExecutor executor){
+    public void execute(CommandExecutor executor, List<String> args){
         Path currentDirectory = executor.getCwd();
         System.out.println(currentDirectory);
 
     }
+
     @Override
     public String getName(){
         return this.name;

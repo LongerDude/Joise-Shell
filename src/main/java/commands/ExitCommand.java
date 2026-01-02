@@ -10,7 +10,7 @@ public class ExitCommand implements Command {
         this.name = "exit";
     }
     @Override
-    public void execute(List<String> args, CommandExecutor executor){
+    public void execute(CommandExecutor executor, List<String> args){
         System.exit(0);
 
     }
