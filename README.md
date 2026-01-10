@@ -48,7 +48,7 @@ This implementation focuses on being small, predictable, and easy to inspect —
 
 ## Requirements
 
-- Java JDK 17+ 
+- JDK 17+ 
 - Maven
 
 ---
